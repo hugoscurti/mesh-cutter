@@ -13,7 +13,7 @@ public static class MeshCutter
     /// Returns posMesh and negMesh, which are the resuling meshes on both sides of the plane 
     /// (posMesh on the same side as the plane's normal, negMesh on the opposite side)
     /// </summary>
-    public static void SliceMesh(Mesh mesh, Plane slice, out TempMesh posMesh, out TempMesh negMesh)
+    public static bool SliceMesh(Mesh mesh, Plane slice, out TempMesh posMesh, out TempMesh negMesh)
     {
         var vertices = mesh.vertices;
         int triangleCount = mesh.triangles.Length;
@@ -31,11 +31,21 @@ public static class MeshCutter
                 added.AddRange(temp);
         }
 
-        FillBoundary(added, posMesh, negMesh);
+        if (added.Count > 0)
+        {
+            FillBoundary(added, posMesh, negMesh);
+            return true;
+        }
+        else return false;
     }
 
+    /// <summary>
+    /// Add vertices and faces to fill the empty face created by the slice
+    /// </summary>
     private static void FillBoundary(List<Vector3> added, TempMesh meshPositive, TempMesh meshNegative)
     {
+        //TODO: Change method to handle all type of shape
+
         List<Vector3> triangles = new List<Vector3>();
         List<Vector3> centerEdges = new List<Vector3>();
 
