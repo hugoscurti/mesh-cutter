@@ -73,7 +73,7 @@ public class MouseSlice : MonoBehaviour {
             var planeTangent = end - start;
             var normalVec = Vector3.Cross(depthAxis, planeTangent);
 
-            DrawPlane(normalVec);
+            //DrawPlane(normalVec);
             SliceObjects(start, normalVec);
         }
     }
@@ -89,7 +89,7 @@ public class MouseSlice : MonoBehaviour {
 
             //Convert plane in object's local frame
             slicePlane.SetNormalAndPosition(
-                obj.transform.InverseTransformVector(normal),
+                obj.transform.InverseTransformVector(normal).normalized,
                 obj.transform.InverseTransformPoint(point));
 
             SliceObject(ref slicePlane, obj);
@@ -105,7 +105,7 @@ public class MouseSlice : MonoBehaviour {
         if (!MeshCutter.SliceMesh(mesh, slicePlane, out posMesh, out negMesh))
         {
             // If we didn't slice the object then no need to separate it into 2 objects
-            Debug.Log("Didn't slice");
+            // Debug.Log("Didn't slice");
             return;
         }
 
@@ -150,7 +150,7 @@ public class MouseSlice : MonoBehaviour {
         mesh.RecalculateBounds();
         mesh.RecalculateTangents();
 
-        if (collider != null)
+        if (collider != null && collider.enabled)
         {
             collider.sharedMesh = mesh;
             collider.convex = true;
