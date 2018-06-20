@@ -10,6 +10,7 @@ using UnityEngine;
 public class CameraOrbit : MonoBehaviour {
 
     public Transform target;
+    private Vector3 fixedPosition;
 
     public float distance = 2.0f;
     public float xSpeed = 5.0f;
@@ -34,6 +35,10 @@ public class CameraOrbit : MonoBehaviour {
         {
             GetComponent<Rigidbody>().freezeRotation = true;
         }
+
+        // Clone the target's position so that it stays fixed
+        if (target)
+            fixedPosition = target.position;
     }
 
     // Called after Update
@@ -52,13 +57,8 @@ public class CameraOrbit : MonoBehaviour {
             Quaternion rotation = toRotation;
 
             distance = Mathf.Clamp(distance - Input.GetAxis("Mouse ScrollWheel") * 5, distanceMin, distanceMax);
-            RaycastHit hit;
-            if (Physics.Linecast(target.position, transform.position, out hit))
-            {
-                distance -= hit.distance;
-            }
             Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-            Vector3 position = rotation * negDistance + target.position;
+            Vector3 position = rotation * negDistance + fixedPosition;
 
             transform.rotation = rotation;
             transform.position = position;
