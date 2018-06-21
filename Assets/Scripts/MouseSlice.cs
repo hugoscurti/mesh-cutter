@@ -14,7 +14,11 @@ public class MouseSlice : MonoBehaviour {
     public GameObject SlicedPrefab;
     public Transform ObjectContainer;
 
+    // How far away from the slice do we separate resulting objects
     public float separation;
+
+    // Do we draw a plane object associated with the slice
+    public bool drawPlane;
 
     Ray mouseRay;
     readonly float distanceFromNearPlane = 2;
@@ -73,7 +77,8 @@ public class MouseSlice : MonoBehaviour {
             var planeTangent = end - start;
             var normalVec = Vector3.Cross(depthAxis, planeTangent);
 
-            //DrawPlane(normalVec);
+            if (drawPlane) DrawPlane(normalVec);
+
             SliceObjects(start, normalVec);
         }
     }
