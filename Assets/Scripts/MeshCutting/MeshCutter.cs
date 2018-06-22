@@ -2,10 +2,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class MeshCutter
+public class MeshCutter
 {
 
+    public TempMesh PositiveMesh { get; private set; }
+    public TempMesh NegativeMesh { get; private set; }
 
+    private List<Vector3> addedPairs;
+
+    private Vector3[] intersectPair;
+    private readonly Vector3[] tempTriangle;
+
+    private Intersections intersect;
+
+    public MeshCutter(int initialArraySize)
+    {
+        PositiveMesh = new TempMesh(initialArraySize);
+        NegativeMesh = new TempMesh(initialArraySize);
+
+        addedPairs = new List<Vector3>(initialArraySize);
+
+        intersectPair = new Vector3[2];
+        tempTriangle = new Vector3[3];
+
+        intersect = new Intersections();
+    }
 
     /// <summary>
     /// Slice a mesh by the slice plane.
@@ -13,33 +34,30 @@ public static class MeshCutter
     /// Returns posMesh and negMesh, which are the resuling meshes on both sides of the plane 
     /// (posMesh on the same side as the plane's normal, negMesh on the opposite side)
     /// </summary>
-    public static bool SliceMesh(Mesh mesh, Plane slice, out TempMesh posMesh, out TempMesh negMesh)
+    public bool SliceMesh(Mesh mesh, Plane slice)
     {
         var vertices = mesh.vertices;
         int triangleCount = mesh.triangles.Length;
 
-        posMesh = new TempMesh(vertices.Length);
-        negMesh = new TempMesh(vertices.Length);
-
-        List<Vector3> added = new List<Vector3>();
-        Vector3[] temp;
+        PositiveMesh.Clear();
+        NegativeMesh.Clear();
+        addedPairs.Clear();
 
         for (int i = 0; i < triangleCount; i += 3)
         {
-            temp = Intersections.TrianglePlaneIntersect(mesh, i, ref slice, posMesh, negMesh);
-            if (temp != null)
-                added.AddRange(temp);
+            if (intersect.TrianglePlaneIntersect(mesh, i, ref slice, PositiveMesh, NegativeMesh, intersectPair))
+                addedPairs.AddRange(intersectPair);
         }
 
-        if (added.Count > 0)
+        if (addedPairs.Count > 0)
         {
-            FillBoundaryGeneral(added, posMesh, negMesh);
+            FillBoundaryGeneral(addedPairs, PositiveMesh, NegativeMesh);
             return true;
         }
         else return false;
     }
 
-    private static void FillBoundaryGeneral(List<Vector3> added, TempMesh meshPositive, TempMesh meshNegative)
+    private void FillBoundaryGeneral(List<Vector3> added, TempMesh meshPositive, TempMesh meshNegative)
     {
         // 1. Reorder added so in order ot their occurence along the perimeter.
         //ReorderList(added);
@@ -47,22 +65,21 @@ public static class MeshCutter
         Vector3 center = FindCenter(added);
 
         //Create triangle for each edge to the center
-        Vector3[] tempTri = new Vector3[3];
-        tempTri[2] = center;
+        tempTriangle[2] = center;
 
         for (int i = 0; i < added.Count; i += 2)
         {
             // Add fronface triangle in meshPositive
-            tempTri[0] = added[i];
-            tempTri[1] = added[i + 1];
+            tempTriangle[0] = added[i];
+            tempTriangle[1] = added[i + 1];
 
-            meshPositive.AddTriangle(tempTri);
+            meshPositive.AddTriangle(tempTriangle);
 
             // Add backface triangle in meshNegative
-            tempTri[0] = added[i + 1];
-            tempTri[1] = added[i];
+            tempTriangle[0] = added[i + 1];
+            tempTriangle[1] = added[i];
 
-            meshNegative.AddTriangle(tempTri);
+            meshNegative.AddTriangle(tempTriangle);
         }
     }
 

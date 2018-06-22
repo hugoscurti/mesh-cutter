@@ -18,10 +18,14 @@ public class MouseSlice : MonoBehaviour {
     public float separation;
 
     // Do we draw a plane object associated with the slice
+    private Plane slicePlane = new Plane();
     public bool drawPlane;
 
     Ray mouseRay;
     readonly float distanceFromNearPlane = 2;
+
+    private MeshCutter meshCutter;
+    private TempMesh biggerMesh, smallerMesh;
 
     #region Utility Functions
 
@@ -46,7 +50,8 @@ public class MouseSlice : MonoBehaviour {
     // Use this for initialization
     void Start () {
         dragging = false;
-
+        // Initialize a somewhat big array so that it doesn't resize hopefully?
+        meshCutter = new MeshCutter(256);   
         line = GetComponent<LineRenderer>();
 	}
 
@@ -71,10 +76,15 @@ public class MouseSlice : MonoBehaviour {
             line.SetPosition(1, end);
             dragging = false;
 
-            //var depthAxis = Camera.main.transform.forward;
+            // Get depth in the direction of the camera to the mouse point
             var depthAxis = mouseRay.direction.normalized;
 
-            var planeTangent = end - start;
+            var planeTangent = (end - start).normalized;
+
+            // if we didn't drag, we set tangent to be on x
+            if (planeTangent == Vector3.zero)
+                planeTangent = Vector3.right;
+
             var normalVec = Vector3.Cross(depthAxis, planeTangent);
 
             if (drawPlane) DrawPlane(normalVec);
@@ -85,7 +95,6 @@ public class MouseSlice : MonoBehaviour {
 
     void SliceObjects(Vector3 point, Vector3 normal)
     {
-        Plane slicePlane = new Plane();
         var toSlice = GameObject.FindGameObjectsWithTag("Sliceable");
         GameObject obj;
         for (int i = 0; i < toSlice.Length; ++i)
@@ -105,9 +114,13 @@ public class MouseSlice : MonoBehaviour {
     {
         var mesh = obj.GetComponent<MeshFilter>().mesh;
 
-        TempMesh posMesh, negMesh;
+        if (!Intersections.BoundPlaneIntersect(mesh, ref slicePlane))
+        {
+            Debug.Log("Object " + obj.name + " didn't intersect");
+            return;
+        }
 
-        if (!MeshCutter.SliceMesh(mesh, slicePlane, out posMesh, out negMesh))
+        if (!meshCutter.SliceMesh(mesh, slicePlane))
         {
             // If we didn't slice the object then no need to separate it into 2 objects
             // Debug.Log("Didn't slice");
@@ -116,15 +129,27 @@ public class MouseSlice : MonoBehaviour {
 
         // TODO: Update center of mass
 
+        bool posBigger = meshCutter.PositiveMesh.surfacearea > meshCutter.NegativeMesh.surfacearea;
+        if (posBigger)
+        {
+            biggerMesh = meshCutter.PositiveMesh;
+            smallerMesh = meshCutter.NegativeMesh;
+        }
+        else
+        {
+            biggerMesh = meshCutter.NegativeMesh;
+            smallerMesh = meshCutter.PositiveMesh;
+        }
+
         // Put the bigger mesh in the original object
-        bool posBigger = posMesh.surfacearea > negMesh.surfacearea;
-        ReplaceMesh(mesh, (posBigger ? posMesh : negMesh), obj.GetComponent<MeshCollider>());
+        // Ignore colliders for now
+        ReplaceMesh(mesh, biggerMesh);
 
         // Create new Sliced object with the other mesh
         GameObject newObject = Instantiate(SlicedPrefab, ObjectContainer);
         newObject.transform.SetPositionAndRotation(obj.transform.position, obj.transform.rotation);
         var newObjMesh = newObject.GetComponent<MeshFilter>().mesh;
-        ReplaceMesh(newObjMesh, (posBigger ? negMesh : posMesh), newObject.GetComponent<MeshCollider>());
+        ReplaceMesh(newObjMesh, smallerMesh);
 
         Transform posTransform, negTransform;
         if (posBigger)
@@ -148,11 +173,10 @@ public class MouseSlice : MonoBehaviour {
     void ReplaceMesh(Mesh mesh, TempMesh tempMesh, MeshCollider collider = null)
     {
         mesh.Clear();
-        mesh.vertices = tempMesh.vertices.ToArray();
-        mesh.triangles = tempMesh.triangles.ToArray();
-        mesh.normals = tempMesh.normals.ToArray();
+        mesh.SetVertices(tempMesh.vertices);
+        mesh.SetTriangles(tempMesh.triangles, 0);
+        mesh.SetNormals(tempMesh.normals);
 
-        mesh.RecalculateBounds();
         mesh.RecalculateTangents();
 
         if (collider != null && collider.enabled)

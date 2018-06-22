@@ -20,6 +20,15 @@ public class TempMesh
         surfacearea = 0;
     }
 
+    public void Clear()
+    {
+        vertices.Clear();
+        normals.Clear();
+        triangles.Clear();
+
+        surfacearea = 0;
+    }
+
     /// <summary>
     /// Add triangle to mesh by looking if points are not already in vertices array and updating triangle indices accordingly.
     /// We expect points to be of size 3
