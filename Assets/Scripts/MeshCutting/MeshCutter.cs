@@ -10,7 +10,7 @@ public class MeshCutter
 
     private List<Vector3> addedPairs;
 
-    private Vector3[] intersectPair;
+    private readonly Vector3[] intersectPair;
     private readonly Vector3[] tempTriangle;
 
     private Intersections intersect;
@@ -34,7 +34,7 @@ public class MeshCutter
     /// Returns posMesh and negMesh, which are the resuling meshes on both sides of the plane 
     /// (posMesh on the same side as the plane's normal, negMesh on the opposite side)
     /// </summary>
-    public bool SliceMesh(Mesh mesh, Plane slice)
+    public bool SliceMesh(Mesh mesh, ref Plane slice)
     {
         var vertices = mesh.vertices;
         int triangleCount = mesh.triangles.Length;

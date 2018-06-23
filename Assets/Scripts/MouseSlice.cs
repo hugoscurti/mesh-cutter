@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class MouseSlice : MonoBehaviour {
 
@@ -120,7 +118,7 @@ public class MouseSlice : MonoBehaviour {
             return;
         }
 
-        if (!meshCutter.SliceMesh(mesh, slicePlane))
+        if (!meshCutter.SliceMesh(mesh, ref slicePlane))
         {
             // If we didn't slice the object then no need to separate it into 2 objects
             // Debug.Log("Didn't slice");
