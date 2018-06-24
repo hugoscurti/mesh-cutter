@@ -9,6 +9,9 @@ public class TempMesh
     public List<Vector3> normals;
     public List<int> triangles;
 
+    // Mappings of indices from original mesh to new mesh
+    private Dictionary<int, int> vMapping;
+
     public float surfacearea;
 
     public TempMesh(int vertexCapacity)
@@ -16,6 +19,8 @@ public class TempMesh
         vertices = new List<Vector3>(vertexCapacity);
         normals = new List<Vector3>(vertexCapacity);
         triangles = new List<int>(vertexCapacity * 3);
+
+        vMapping = new Dictionary<int, int>(vertexCapacity);
 
         surfacearea = 0;
     }
@@ -26,7 +31,60 @@ public class TempMesh
         normals.Clear();
         triangles.Clear();
 
+        vMapping.Clear();
+
         surfacearea = 0;
+    }
+
+    /// <summary>
+    /// Add point and normal to arrays if not already present
+    /// </summary>
+    private void AddPoint(Vector3 point, Vector3 normal)
+    {
+        triangles.Add(vertices.Count);
+        vertices.Add(point);
+        normals.Add(normal);
+    }
+
+    /// <summary>
+    /// Add triangles from the original mesh. Therefore, no new vertices to add 
+    /// and no normals to compute
+    /// </summary>
+    public void AddOgTriangle(int[] indices)
+    {
+        for (int i = 0; i < 3; ++i)
+            triangles.Add(vMapping[indices[i]]);
+
+        //Compute triangle area
+        surfacearea += GetTriangleArea(triangles.Count - 3);
+    }
+
+    public void AddSlicedTriangle(int i1, Vector3 v2, int i3)
+    {
+        int v1 = vMapping[i1],
+            v3 = vMapping[i3];
+        Vector3 normal = Vector3.Cross(v2 - vertices[v1], vertices[v3] - v2).normalized;
+
+        triangles.Add(v1);
+        AddPoint(v2, normal);
+        triangles.Add(vMapping[i3]);
+
+        //Compute triangle area
+        surfacearea += GetTriangleArea(triangles.Count - 3);
+    }
+
+    public void AddSlicedTriangle(int i1, Vector3 v2, Vector3 v3)
+    {
+        // Compute face normal?
+        int v1 = vMapping[i1];
+        Vector3 normal = Vector3.Cross(v2 - vertices[v1], v3 - v2).normalized;
+
+        triangles.Add(v1);
+        AddPoint(v2, normal);
+        AddPoint(v3, normal);
+
+        //Compute triangle area
+        surfacearea += GetTriangleArea(triangles.Count - 3);
     }
 
     /// <summary>
@@ -38,28 +96,37 @@ public class TempMesh
         // Compute normal
         Vector3 normal = Vector3.Cross(points[1] - points[0], points[2] - points[1]).normalized;
 
-        //Compute triangle area
-        surfacearea += GetTriangleArea(points);
-
-        int idx;
         for (int i = 0; i < 3; ++i)
         {
-            idx = vertices.IndexOf(points[i]);
-            if (idx == -1 || normals[idx] != normal)
-            {
-                vertices.Add(points[i]);
-                normals.Add(normal);
-                idx = vertices.Count - 1;
-            }
-
-            triangles.Add(idx);
+            AddPoint(points[i], normal);
         }
+
+        //Compute triangle area
+        surfacearea += GetTriangleArea(triangles.Count - 3);
     }
 
-    private float GetTriangleArea(Vector3[] p)
+    public void ContainsKeys(List<int> triangles, int startIdx, bool[] isTrue)
     {
-        var va = p[2] - p[0];
-        var vb = p[1] - p[0];
+        for (int i = 0; i < 3; ++i)
+            isTrue[i] = vMapping.ContainsKey(triangles[startIdx + i]);
+    }
+
+    /// <summary>
+    /// Add a vertex from the original mesh 
+    /// while storing its old index in the dictionary of index mappings
+    /// </summary>
+    public void AddVertex(List<Vector3> ogVertices, List<Vector3> ogNormals, int index)
+    {
+        vMapping[index] = vertices.Count;
+        vertices.Add(ogVertices[index]);
+        normals.Add(ogNormals[index]);
+    }
+
+
+    private float GetTriangleArea(int i)
+    {
+        var va = vertices[triangles[i + 2]] - vertices[triangles[i]];
+        var vb = vertices[triangles[i + 1]] - vertices[triangles[i]];
         float a = va.magnitude;
         float b = vb.magnitude;
         float gamma = Mathf.Deg2Rad * Vector3.Angle(vb, va);

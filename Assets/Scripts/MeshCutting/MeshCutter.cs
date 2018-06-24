@@ -10,6 +10,10 @@ public class MeshCutter
 
     private List<Vector3> addedPairs;
 
+    private readonly List<Vector3> ogVertices;
+    private readonly List<int> ogTriangles;
+    private readonly List<Vector3> ogNormals;
+
     private readonly Vector3[] intersectPair;
     private readonly Vector3[] tempTriangle;
 
@@ -21,6 +25,9 @@ public class MeshCutter
         NegativeMesh = new TempMesh(initialArraySize);
 
         addedPairs = new List<Vector3>(initialArraySize);
+        ogVertices = new List<Vector3>(initialArraySize);
+        ogTriangles = new List<int>(initialArraySize * 3);
+        ogNormals = new List<Vector3>(initialArraySize);
 
         intersectPair = new Vector3[2];
         tempTriangle = new Vector3[3];
@@ -36,16 +43,38 @@ public class MeshCutter
     /// </summary>
     public bool SliceMesh(Mesh mesh, ref Plane slice)
     {
-        var vertices = mesh.vertices;
-        int triangleCount = mesh.triangles.Length;
+        // 1. Verify if the bounds intersect first
+        if (!Intersections.BoundPlaneIntersect(mesh, ref slice))
+        {
+            //Debug.Log("Object " + obj.name + " didn't intersect");
+            return false;
+        }
+
+        mesh.GetVertices(ogVertices);
+        mesh.GetTriangles(ogTriangles, 0);
+        mesh.GetNormals(ogNormals);
 
         PositiveMesh.Clear();
         NegativeMesh.Clear();
         addedPairs.Clear();
 
-        for (int i = 0; i < triangleCount; i += 3)
+        // 2. Separate old vertices in new meshes
+        for(int i = 0; i < ogVertices.Count; ++i)
         {
-            if (intersect.TrianglePlaneIntersect(mesh, i, ref slice, PositiveMesh, NegativeMesh, intersectPair))
+            if (slice.GetDistanceToPoint(ogVertices[i]) >= 0)
+                PositiveMesh.AddVertex(ogVertices, ogNormals, i);
+            else
+                NegativeMesh.AddVertex(ogVertices, ogNormals, i);
+        }
+
+        // 2.5 : If one of the mesh has no vertices, then it doesn't intersect
+        if (NegativeMesh.vertices.Count == 0 || PositiveMesh.vertices.Count == 0)
+            return false;
+
+        // 3. Separate triangles and cut those that intersect the plane
+        for (int i = 0; i < ogTriangles.Count; i += 3)
+        {
+            if (intersect.TrianglePlaneIntersect(ogVertices, ogTriangles, i, ref slice, PositiveMesh, NegativeMesh, intersectPair))
                 addedPairs.AddRange(intersectPair);
         }
 
@@ -53,8 +82,10 @@ public class MeshCutter
         {
             FillBoundaryGeneral(addedPairs, PositiveMesh, NegativeMesh);
             return true;
+        } else
+        {
+            throw new UnityException("Error: if added pairs is empty, we should have returned false earlier");
         }
-        else return false;
     }
 
     private void FillBoundaryGeneral(List<Vector3> added, TempMesh meshPositive, TempMesh meshNegative)

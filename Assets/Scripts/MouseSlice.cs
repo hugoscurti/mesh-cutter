@@ -112,12 +112,6 @@ public class MouseSlice : MonoBehaviour {
     {
         var mesh = obj.GetComponent<MeshFilter>().mesh;
 
-        if (!Intersections.BoundPlaneIntersect(mesh, ref slicePlane))
-        {
-            Debug.Log("Object " + obj.name + " didn't intersect");
-            return;
-        }
-
         if (!meshCutter.SliceMesh(mesh, ref slicePlane))
         {
             // If we didn't slice the object then no need to separate it into 2 objects
@@ -175,6 +169,7 @@ public class MouseSlice : MonoBehaviour {
         mesh.SetTriangles(tempMesh.triangles, 0);
         mesh.SetNormals(tempMesh.normals);
 
+        //mesh.RecalculateNormals();
         mesh.RecalculateTangents();
 
         if (collider != null && collider.enabled)

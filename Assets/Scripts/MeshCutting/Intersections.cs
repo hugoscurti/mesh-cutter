@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class Intersections
 {
@@ -24,18 +25,18 @@ public class Intersections
     #endregion
 
     // Initialize fixed arrays so that we don't initialize them every time we call TrianglePlaneIntersect
-    private readonly Vector3[] p;
+    private readonly Vector3[] v;
+    private readonly int[] t;
     private readonly bool[] positive;
-    private readonly Vector3[] newFaces;
 
     // Used in intersect method
     private Ray edgeRay;
 
     public Intersections()
     {
-        p = new Vector3[3];
+        v = new Vector3[3];
+        t = new int[3];
         positive = new bool[3];
-        newFaces = new Vector3[3];
     }
 
     /// <summary>
@@ -65,21 +66,26 @@ public class Intersections
      *       |___________________
      */
 
-    public bool TrianglePlaneIntersect(Mesh mesh, int triangleIdx, ref Plane plane, TempMesh posMesh, TempMesh negMesh, Vector3[] intersectVectors)
+    public bool TrianglePlaneIntersect(List<Vector3> vertices, List<int> triangles, int startIdx, ref Plane plane, TempMesh posMesh, TempMesh negMesh, Vector3[] intersectVectors)
     {
-        p[0] = mesh.vertices[mesh.triangles[triangleIdx]];
-        p[1] = mesh.vertices[mesh.triangles[triangleIdx + 1]];
-        p[2] = mesh.vertices[mesh.triangles[triangleIdx + 2]];
+        int i;
+        // Store triangle indices
+        for(i = 0; i < 3; ++i)
+            t[i] = triangles[startIdx + i];
 
-        positive[0] = plane.GetDistanceToPoint(p[0]) >= 0;
-        positive[1] = plane.GetDistanceToPoint(p[1]) >= 0;
-        positive[2] = plane.GetDistanceToPoint(p[2]) >= 0;
+        // Store associated vertices
+        for (i = 0; i < 3; ++i)
+            v[i] = vertices[t[i]];
 
+        // Store wether the vertex is on positive mesh
+        posMesh.ContainsKeys(triangles, startIdx, positive);
+
+        // If they're all on the same side, don't do intersection
         if (positive[0] == positive[1] && positive[1] == positive[2])
         {
             // All points are on the same side. No intersection
             // Add them to either positive or negative mesh
-            (positive[0] ? posMesh : negMesh).AddTriangle(p);
+            (positive[0] ? posMesh : negMesh).AddOgTriangle(t);
             return false;
         }
 
@@ -98,25 +104,15 @@ public class Intersections
         if (nextPoint == 3) nextPoint = 0;
 
         // Get the 2 intersection points
-        Vector3 newPointPrev = Intersect(plane, p[lonelyPoint], p[prevPoint]);
-        Vector3 newPointNext = Intersect(plane, p[lonelyPoint], p[nextPoint]);
-
-        newFaces[0] = newPointPrev;
-        newFaces[1] = p[lonelyPoint];
-        newFaces[2] = newPointNext;
+        Vector3 newPointPrev = Intersect(plane, v[lonelyPoint], v[prevPoint]);
+        Vector3 newPointNext = Intersect(plane, v[lonelyPoint], v[nextPoint]);
 
         //Set the new triangles and store them in respective tempmeshes
-        (positive[lonelyPoint] ? posMesh : negMesh).AddTriangle(newFaces);
+        (positive[lonelyPoint] ? posMesh : negMesh).AddSlicedTriangle(t[lonelyPoint], newPointNext, newPointPrev);
 
-        newFaces[0] = p[prevPoint];
-        newFaces[1] = newPointPrev;
-        newFaces[2] = p[nextPoint];
-        (positive[prevPoint] ? posMesh : negMesh).AddTriangle(newFaces);
+        (positive[prevPoint] ? posMesh : negMesh).AddSlicedTriangle(t[prevPoint], newPointPrev, t[nextPoint]);
 
-        newFaces[0] = p[nextPoint];
-        newFaces[1] = newPointPrev;
-        newFaces[2] = newPointNext;
-        (positive[prevPoint] ? posMesh : negMesh).AddTriangle(newFaces);
+        (positive[prevPoint] ? posMesh : negMesh).AddSlicedTriangle(t[nextPoint], newPointPrev, newPointNext);
 
         // We return the edge that will be in the correct orientation for the positive side mesh
         if (positive[lonelyPoint])
