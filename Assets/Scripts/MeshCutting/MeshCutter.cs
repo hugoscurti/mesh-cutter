@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -136,14 +136,46 @@ public class MeshCutter
     /// </summary>
     private static void ReorderList(List<Vector3> pairs)
     {
-        Vector3 tempFirst, tempSecond;
+        int nbFaces = 0;
+        int faceStart = 0;
         int i = 0;
+        Vector3 tempFirst, tempSecond;
+
+        // 1. Remove edges where start and end vertices are equal
+        // Seems to solve to problem of remaining vertices when connecting faces 
+        for (i = pairs.Count - 2; i >= 0; i -= 2)
+        {
+            if (pairs[i] == pairs[i + 1])
+            {
+                pairs.RemoveAt(i + 1);
+                pairs.RemoveAt(i);
+            }
+            else
+            {
+                // Look for equal pairs
+                for (int j = i - 2; j >= 0; j -= 2)
+                {
+                    if (pairs[i] == pairs[j] && pairs[i + 1] == pairs[j + 1])
+                    {
+                        pairs.RemoveAt(i + 1);
+                        pairs.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+        }
+
+        i = 0;
         while (i < pairs.Count)
         {
-            for (int j = i + 2; j < pairs.Count; ++j)
+            // Find next adjacent edge
+            for (int j = i + 2; j < pairs.Count; j += 2)
             {
-                if (pairs[j] == pairs[i + 1] && j != i + 2)
+                if (pairs[j] == pairs[i + 1])
                 {
+                    // If j is already at the correct place we break the loop
+                    if (j == i + 2) break;
+
                     // Put j at i+2
                     tempFirst = pairs[i + 2];
                     tempSecond = pairs[i + 3];
@@ -153,6 +185,26 @@ public class MeshCutter
                     pairs[j + 1] = tempSecond;
                     break;
                 }
+            }
+
+            if (i + 3 >= pairs.Count) {
+                // Why does this happen?
+                /* This seems to happen because edges are so small that at a certain point
+                 * some vertices are equal to eachother and one edge is being 
+                 */
+
+                Debug.Log("Huh?");
+                break;
+            }
+            else if (pairs[i + 3] == pairs[faceStart])   //TODO: Index out of range error happens here!
+            {
+                // A face is complete.
+                nbFaces++;
+                i += 4;
+                faceStart = i;
+            } else
+            {
+                i += 2;
             }
         }
     }    
