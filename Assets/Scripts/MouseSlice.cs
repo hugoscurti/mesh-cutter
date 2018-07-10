@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class MouseSlice : MonoBehaviour {
 
@@ -182,7 +182,8 @@ public class MouseSlice : MonoBehaviour {
     void SeparateMeshes(Transform posTransform, Transform negTransform, Vector3 normal)
     {
         Vector3 separationVec = normal * separation;
-        posTransform.position += separationVec;
-        negTransform.position -= separationVec;
+        // Transform direction in local coordinates
+        posTransform.localPosition += posTransform.InverseTransformVector(separationVec);
+        negTransform.localPosition -= negTransform.InverseTransformVector(separationVec);
     }
 }

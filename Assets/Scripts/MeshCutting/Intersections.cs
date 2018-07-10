@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Intersections
@@ -47,8 +47,15 @@ public class Intersections
         edgeRay.origin = first;
         edgeRay.direction = (second - first).normalized;
         float dist;
+        float maxDist = Vector3.Distance(first, second);
 
-        plane.Raycast(edgeRay, out dist);
+        if (!plane.Raycast(edgeRay, out dist))
+            // Intersect in wrong direction...
+            throw new UnityException("Line-Plane intersect in wrong direction");
+        else if (dist > maxDist)
+            // Intersect outside of line segment
+            throw new UnityException("Intersect outside of line");
+
         return edgeRay.GetPoint(dist);
     }
 
