@@ -51,12 +51,14 @@ public class MouseSlice : MonoBehaviour {
         // Initialize a somewhat big array so that it doesn't resize hopefully?
         meshCutter = new MeshCutter(256);   
         line = GetComponent<LineRenderer>();
+        line.positionCount = 0;
 	}
 
     // Update is called once per frame
     void Update() {
         if (!dragging && Input.GetMouseButtonDown(0))
         {
+            line.positionCount = 2;
             start = GetMousePosOnCamera();
             line.SetPosition(0, start);
             dragging = true;
@@ -88,6 +90,9 @@ public class MouseSlice : MonoBehaviour {
             if (drawPlane) DrawPlane(normalVec);
 
             SliceObjects(start, normalVec);
+
+            // When it's done, remove the line
+            line.positionCount = 0;
         }
     }
 
