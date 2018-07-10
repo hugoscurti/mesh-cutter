@@ -219,30 +219,6 @@ public class MeshCutter
         int i = 0;
         Vector3 tempFirst, tempSecond;
 
-        // 1. Remove edges where start and end vertices are equal
-        // Seems to solve to problem of remaining vertices when connecting faces 
-        for (i = pairs.Count - 2; i >= 0; i -= 2)
-        {
-            if (pairs[i] == pairs[i + 1])
-            {
-                pairs.RemoveAt(i + 1);
-                pairs.RemoveAt(i);
-            }
-            else
-            {
-                // Look for equal pairs
-                for (int j = i - 2; j >= 0; j -= 2)
-                {
-                    if (pairs[i] == pairs[j] && pairs[i + 1] == pairs[j + 1])
-                    {
-                        pairs.RemoveAt(i + 1);
-                        pairs.RemoveAt(i);
-                        break;
-                    }
-                }
-            }
-        }
-
         i = 0;
         while (i < pairs.Count)
         {
