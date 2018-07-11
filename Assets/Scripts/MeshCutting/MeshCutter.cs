@@ -97,9 +97,9 @@ public class MeshCutter
     private void FillBoundaryGeneral(List<Vector3> added)
     {
         // 1. Reorder added so in order ot their occurence along the perimeter.
-        ReorderList(added);
+        MeshUtils.ReorderList(added);
 
-        Vector3 center = FindCenter(added);
+        Vector3 center = MeshUtils.FindCenter(added);
 
         //Create triangle for each edge to the center
         tempTriangle[2] = center;
@@ -124,7 +124,7 @@ public class MeshCutter
     private void FillBoundaryFace(List<Vector3> added)
     {
         // 1. Reorder added so in order ot their occurence along the perimeter.
-        ReorderList(added);
+        MeshUtils.ReorderList(added);
 
         // 2. Find actual face vertices
         var face = FindRealPolygon(added);
@@ -189,78 +189,6 @@ public class MeshCutter
         NegativeMesh.AddTriangle(tempTriangle);
     }
     #endregion
-
-
-
-    /// <summary>
-    /// Find center of polygon by averaging vertices
-    /// </summary>
-    private static Vector3 FindCenter(List<Vector3> pairs)
-    {
-        Vector3 center = Vector3.zero;
-        int count = 0;
-
-        for (int i = 0; i < pairs.Count; i += 2)
-        {
-            center += pairs[i];
-            count++;
-        }
-
-        return center / count;
-    }
-
-    /// <summary>
-    /// Reorder a list of pairs of vectors, where the second vector of a pair matches the first vector of 
-    /// </summary>
-    private static void ReorderList(List<Vector3> pairs)
-    {
-        int nbFaces = 0;
-        int faceStart = 0;
-        int i = 0;
-        Vector3 tempFirst, tempSecond;
-
-        i = 0;
-        while (i < pairs.Count)
-        {
-            // Find next adjacent edge
-            for (int j = i + 2; j < pairs.Count; j += 2)
-            {
-                if (pairs[j] == pairs[i + 1])
-                {
-                    // If j is already at the correct place we break the loop
-                    if (j == i + 2) break;
-
-                    // Put j at i+2
-                    tempFirst = pairs[i + 2];
-                    tempSecond = pairs[i + 3];
-                    pairs[i + 2] = pairs[j];
-                    pairs[i + 3] = pairs[j + 1];
-                    pairs[j] = tempFirst;
-                    pairs[j + 1] = tempSecond;
-                    break;
-                }
-            }
-
-            if (i + 3 >= pairs.Count) {
-                // Why does this happen?
-                /* This seems to happen because edges are so small that at a certain point
-                 * some vertices are equal to eachother and one edge is being 
-                 */
-
-                Debug.Log("Huh?");
-                break;
-            }
-            else if (pairs[i + 3] == pairs[faceStart])   //TODO: Index out of range error happens here!
-            {
-                // A face is complete.
-                nbFaces++;
-                i += 4;
-                faceStart = i;
-            } else
-            {
-                i += 2;
-            }
-        }
-    }    
+    
 }
 
