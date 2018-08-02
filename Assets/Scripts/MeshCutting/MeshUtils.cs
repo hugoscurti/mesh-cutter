@@ -31,42 +31,28 @@ public static class MeshUtils
         int nbFaces = 0;
         int faceStart = 0;
         int i = 0;
-        Vector3 tempFirst, tempSecond;
 
-        i = 0;
         while (i < pairs.Count)
         {
             // Find next adjacent edge
             for (int j = i + 2; j < pairs.Count; j += 2)
             {
-                // We use the equals function to test for complete equality, not approximate
                 if (pairs[j] == pairs[i + 1])
                 {
-                    // If j is already at the correct place we break the loop
-                    if (j == i + 2) break;
-
                     // Put j at i+2
-                    tempFirst = pairs[i + 2];
-                    tempSecond = pairs[i + 3];
-                    pairs[i + 2] = pairs[j];
-                    pairs[i + 3] = pairs[j + 1];
-                    pairs[j] = tempFirst;
-                    pairs[j + 1] = tempSecond;
+                    SwitchPairs(pairs, i + 2, j);
                     break;
                 }
             }
 
+
             if (i + 3 >= pairs.Count)
             {
                 // Why does this happen?
-                /* This seems to happen because edges are so small that at a certain point
-                 * some vertices are equal to eachother and one edge is being 
-                 */
-
                 Debug.Log("Huh?");
                 break;
             }
-            else if (pairs[i + 3] == pairs[faceStart])   //TODO: Index out of range error happens here!
+            else if (pairs[i + 3] == pairs[faceStart])
             {
                 // A face is complete.
                 nbFaces++;
@@ -78,6 +64,18 @@ public static class MeshUtils
                 i += 2;
             }
         }
+    }
+
+    private static void SwitchPairs(List<Vector3> pairs, int pos1, int pos2)
+    {
+        if (pos1 == pos2) return;
+
+        Vector3 temp1 = pairs[pos1];
+        Vector3 temp2 = pairs[pos1 + 1];
+        pairs[pos1] = pairs[pos2];
+        pairs[pos1 + 1] = pairs[pos2 + 1];
+        pairs[pos2] = temp1;
+        pairs[pos2 + 1] = temp2;
     }
 
 }
