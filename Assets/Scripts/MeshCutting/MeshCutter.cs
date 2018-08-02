@@ -13,6 +13,7 @@ public class MeshCutter
     private readonly List<Vector3> ogVertices;
     private readonly List<int> ogTriangles;
     private readonly List<Vector3> ogNormals;
+    private readonly List<Vector2> ogUvs;
 
     private readonly Vector3[] intersectPair;
     private readonly Vector3[] tempTriangle;
@@ -28,8 +29,9 @@ public class MeshCutter
 
         addedPairs = new List<Vector3>(initialArraySize);
         ogVertices = new List<Vector3>(initialArraySize);
-        ogTriangles = new List<int>(initialArraySize * 3);
         ogNormals = new List<Vector3>(initialArraySize);
+        ogUvs = new List<Vector2>(initialArraySize);
+        ogTriangles = new List<int>(initialArraySize * 3);
 
         intersectPair = new Vector3[2];
         tempTriangle = new Vector3[3];
@@ -55,6 +57,7 @@ public class MeshCutter
         mesh.GetVertices(ogVertices);
         mesh.GetTriangles(ogTriangles, 0);
         mesh.GetNormals(ogNormals);
+        mesh.GetUVs(0, ogUvs);
 
         PositiveMesh.Clear();
         NegativeMesh.Clear();
@@ -64,9 +67,9 @@ public class MeshCutter
         for(int i = 0; i < ogVertices.Count; ++i)
         {
             if (slice.GetDistanceToPoint(ogVertices[i]) >= 0)
-                PositiveMesh.AddVertex(ogVertices, ogNormals, i);
+                PositiveMesh.AddVertex(ogVertices, ogNormals, ogUvs, i);
             else
-                NegativeMesh.AddVertex(ogVertices, ogNormals, i);
+                NegativeMesh.AddVertex(ogVertices, ogNormals, ogUvs, i);
         }
 
         // 2.5 : If one of the mesh has no vertices, then it doesn't intersect
@@ -76,7 +79,7 @@ public class MeshCutter
         // 3. Separate triangles and cut those that intersect the plane
         for (int i = 0; i < ogTriangles.Count; i += 3)
         {
-            if (intersect.TrianglePlaneIntersect(ogVertices, ogTriangles, i, ref slice, PositiveMesh, NegativeMesh, intersectPair))
+            if (intersect.TrianglePlaneIntersect(ogVertices, ogUvs, ogTriangles, i, ref slice, PositiveMesh, NegativeMesh, intersectPair))
                 addedPairs.AddRange(intersectPair);
         }
 

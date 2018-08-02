@@ -118,14 +118,12 @@ public class MouseSlice : MonoBehaviour {
         var mesh = obj.GetComponent<MeshFilter>().mesh;
 
         if (!meshCutter.SliceMesh(mesh, ref slicePlane))
-        {
             // If we didn't slice the object then no need to separate it into 2 objects
-            // Debug.Log("Didn't slice");
             return;
-        }
 
         // TODO: Update center of mass
 
+        // Silly condition that labels which mesh is bigger to keep the bigger mesh in the original gameobject
         bool posBigger = meshCutter.PositiveMesh.surfacearea > meshCutter.NegativeMesh.surfacearea;
         if (posBigger)
         {
@@ -138,14 +136,14 @@ public class MouseSlice : MonoBehaviour {
             smallerMesh = meshCutter.PositiveMesh;
         }
 
+        // Create new Sliced object with the other mesh
+        GameObject newObject = Instantiate(obj, ObjectContainer);
+        newObject.transform.SetPositionAndRotation(obj.transform.position, obj.transform.rotation);
+        var newObjMesh = newObject.GetComponent<MeshFilter>().mesh;
+
         // Put the bigger mesh in the original object
         // Ignore colliders for now
         ReplaceMesh(mesh, biggerMesh);
-
-        // Create new Sliced object with the other mesh
-        GameObject newObject = Instantiate(SlicedPrefab, ObjectContainer);
-        newObject.transform.SetPositionAndRotation(obj.transform.position, obj.transform.rotation);
-        var newObjMesh = newObject.GetComponent<MeshFilter>().mesh;
         ReplaceMesh(newObjMesh, smallerMesh);
 
         Transform posTransform, negTransform;
@@ -173,7 +171,8 @@ public class MouseSlice : MonoBehaviour {
         mesh.SetVertices(tempMesh.vertices);
         mesh.SetTriangles(tempMesh.triangles, 0);
         mesh.SetNormals(tempMesh.normals);
-
+        mesh.SetUVs(0, tempMesh.uvs);
+        
         //mesh.RecalculateNormals();
         mesh.RecalculateTangents();
 
