@@ -192,7 +192,7 @@ public class MouseSlice : MonoBehaviour {
         Vector3 worldNormal = ((Vector3)(posTransform.worldToLocalMatrix.transpose * normal)).normalized;
 
         Vector3 separationVec = worldNormal * separation;
-        // Transform direction in local coordinates
+        // Transform direction in world coordinates
         posTransform.position += separationVec;
         negTransform.position -= separationVec;
     }
