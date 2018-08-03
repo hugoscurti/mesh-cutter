@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MouseSlice : MonoBehaviour {
@@ -99,7 +100,13 @@ public class MouseSlice : MonoBehaviour {
     void SliceObjects(Vector3 point, Vector3 normal)
     {
         var toSlice = GameObject.FindGameObjectsWithTag("Sliceable");
+
+        // Put results in positive and negative array so that we separate all meshes if there was a cut made
+        List<Transform> positive = new List<Transform>(),
+            negative = new List<Transform>();
+
         GameObject obj;
+        bool slicedAny = false;
         for (int i = 0; i < toSlice.Length; ++i)
         {
             obj = toSlice[i];
@@ -112,17 +119,28 @@ public class MouseSlice : MonoBehaviour {
                 transformedNormal,
                 obj.transform.InverseTransformPoint(point));
 
-            SliceObject(ref slicePlane, obj);
+            slicedAny = SliceObject(ref slicePlane, obj, positive, negative) || slicedAny;
         }
+
+        // Separate meshes if a slice was made
+        if (slicedAny)
+            SeparateMeshes(positive, negative, normal);
     }
 
-    void SliceObject(ref Plane slicePlane, GameObject obj)
+    bool SliceObject(ref Plane slicePlane, GameObject obj, List<Transform> positiveObjects, List<Transform> negativeObjects)
     {
         var mesh = obj.GetComponent<MeshFilter>().mesh;
 
         if (!meshCutter.SliceMesh(mesh, ref slicePlane))
-            // If we didn't slice the object then no need to separate it into 2 objects
-            return;
+        {
+            // Put object in the respective list
+            if (slicePlane.GetDistanceToPoint(meshCutter.GetFirstVertex()) >= 0)
+                positiveObjects.Add(obj.transform);
+            else
+                negativeObjects.Add(obj.transform);
+
+            return false;
+        }
 
         // TODO: Update center of mass
 
@@ -145,23 +163,14 @@ public class MouseSlice : MonoBehaviour {
         var newObjMesh = newObject.GetComponent<MeshFilter>().mesh;
 
         // Put the bigger mesh in the original object
-        // Ignore colliders for now
+        // TODO: Enable collider generation (either the exact mesh or compute smallest enclosing sphere)
         ReplaceMesh(mesh, biggerMesh);
         ReplaceMesh(newObjMesh, smallerMesh);
 
-        Transform posTransform, negTransform;
-        if (posBigger)
-        {
-            posTransform = obj.transform;
-            negTransform = newObject.transform;
-        } else
-        {
-            posTransform = newObject.transform;
-            negTransform = obj.transform;
-        }
+        (posBigger ? positiveObjects : negativeObjects).Add(obj.transform);
+        (posBigger ? negativeObjects : positiveObjects).Add(newObject.transform);
 
-        // Separate meshes 
-        SeparateMeshes(posTransform, negTransform, slicePlane.normal);
+        return true;
     }
 
 
@@ -186,14 +195,26 @@ public class MouseSlice : MonoBehaviour {
         }
     }
 
-    void SeparateMeshes(Transform posTransform, Transform negTransform, Vector3 normal)
+    void SeparateMeshes(Transform posTransform, Transform negTransform, Vector3 localPlaneNormal)
     {
         // Bring back normal in world space
-        Vector3 worldNormal = ((Vector3)(posTransform.worldToLocalMatrix.transpose * normal)).normalized;
+        Vector3 worldNormal = ((Vector3)(posTransform.worldToLocalMatrix.transpose * localPlaneNormal)).normalized;
 
         Vector3 separationVec = worldNormal * separation;
         // Transform direction in world coordinates
         posTransform.position += separationVec;
         negTransform.position -= separationVec;
+    }
+
+    void SeparateMeshes(List<Transform> positives, List<Transform> negatives, Vector3 worldPlaneNormal)
+    {
+        int i;
+        var separationVector = worldPlaneNormal * separation;
+
+        for(i = 0; i <positives.Count; ++i)
+            positives[i].transform.position += separationVector;
+
+        for (i = 0; i < negatives.Count; ++i)
+            negatives[i].transform.position -= separationVector;
     }
 }

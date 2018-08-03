@@ -47,14 +47,14 @@ public class MeshCutter
     /// </summary>
     public bool SliceMesh(Mesh mesh, ref Plane slice)
     {
+
+        // Let's always fill the vertices array so that we can access it even if the mesh didn't intersect
+        mesh.GetVertices(ogVertices);
+
         // 1. Verify if the bounds intersect first
         if (!Intersections.BoundPlaneIntersect(mesh, ref slice))
-        {
-            //Debug.Log("Object " + obj.name + " didn't intersect");
             return false;
-        }
 
-        mesh.GetVertices(ogVertices);
         mesh.GetTriangles(ogTriangles, 0);
         mesh.GetNormals(ogNormals);
         mesh.GetUVs(0, ogUvs);
@@ -92,6 +92,15 @@ public class MeshCutter
         {
             throw new UnityException("Error: if added pairs is empty, we should have returned false earlier");
         }
+    }
+
+    public Vector3 GetFirstVertex()
+    {
+        if (ogVertices.Count == 0)
+            throw new UnityException(
+                "Error: Either the mesh has no vertices or GetFirstVertex was called before SliceMesh.");
+        else
+            return ogVertices[0];
     }
 
     #region Boundary fill method
