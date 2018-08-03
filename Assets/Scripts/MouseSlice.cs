@@ -103,10 +103,13 @@ public class MouseSlice : MonoBehaviour {
         for (int i = 0; i < toSlice.Length; ++i)
         {
             obj = toSlice[i];
+            // We multiply by the inverse transpose of the worldToLocal Matrix, a.k.a the transpose of the localToWorld Matrix
+            // Since this is how normal are transformed
+            var transformedNormal = ((Vector3)(obj.transform.localToWorldMatrix.transpose * normal)).normalized;
 
             //Convert plane in object's local frame
             slicePlane.SetNormalAndPosition(
-                obj.transform.InverseTransformVector(normal).normalized,
+                transformedNormal,
                 obj.transform.InverseTransformPoint(point));
 
             SliceObject(ref slicePlane, obj);
@@ -185,9 +188,12 @@ public class MouseSlice : MonoBehaviour {
 
     void SeparateMeshes(Transform posTransform, Transform negTransform, Vector3 normal)
     {
-        Vector3 separationVec = normal * separation;
+        // Bring back normal in world space
+        Vector3 worldNormal = ((Vector3)(posTransform.worldToLocalMatrix.transpose * normal)).normalized;
+
+        Vector3 separationVec = worldNormal * separation;
         // Transform direction in local coordinates
-        posTransform.localPosition += posTransform.InverseTransformVector(separationVec);
-        negTransform.localPosition -= negTransform.InverseTransformVector(separationVec);
+        posTransform.position += separationVec;
+        negTransform.position -= separationVec;
     }
 }
