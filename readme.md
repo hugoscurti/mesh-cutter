@@ -27,7 +27,7 @@ Here are a few examples of simple shapes being cut.
 
 | Cylinder  | Refractive Sphere  | Toonlit Suzanne  |
 |---|---|---|
-|  <img src="https://user-images.githubusercontent.com/5420431/43605203-aad7f56a-9665-11e8-879e-2a526eef3909.gif" width="150px"> | <img src="https://user-images.githubusercontent.com/5420431/43605664-11b718b4-9667-11e8-9885-db1cf9bc7e90.gif" width="150px"> | <img src="https://user-images.githubusercontent.com/5420431/43606472-6c44f880-9669-11e8-9238-0b3b6dc04e9e.gif" width="150px">  |
+|  <img src="https://user-images.githubusercontent.com/5420431/43605203-aad7f56a-9665-11e8-879e-2a526eef3909.gif" width="250px"> | <img src="https://user-images.githubusercontent.com/5420431/43605664-11b718b4-9667-11e8-9885-db1cf9bc7e90.gif" width="250px"> | <img src="https://user-images.githubusercontent.com/5420431/43606472-6c44f880-9669-11e8-9238-0b3b6dc04e9e.gif" width="250px">  |
 
 Note
 * The material used for the sphere is _GlassRefractive_ from Unity's Standard Assets
