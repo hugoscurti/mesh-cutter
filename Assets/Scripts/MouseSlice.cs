@@ -3,14 +3,7 @@ using UnityEngine;
 
 public class MouseSlice : MonoBehaviour {
 
-    bool dragging;
-    Vector3 start;
-    Vector3 end;
-
-    LineRenderer line;
-
     public GameObject plane;
-    public GameObject SlicedPrefab;
     public Transform ObjectContainer;
 
     // How far away from the slice do we separate resulting objects
@@ -19,16 +12,16 @@ public class MouseSlice : MonoBehaviour {
     // Do we draw a plane object associated with the slice
     private Plane slicePlane = new Plane();
     public bool drawPlane;
-
-    Ray mouseRay;
-    readonly float distanceFromNearPlane = 2;
+    
+    // Reference to the line renderer
+    public ScreenLineRenderer lineRenderer;
 
     private MeshCutter meshCutter;
     private TempMesh biggerMesh, smallerMesh;
 
     #region Utility Functions
 
-    void DrawPlane(Vector3 normalVec)
+    void DrawPlane(Vector3 start, Vector3 end, Vector3 normalVec)
     {
         Quaternion rotate = Quaternion.FromToRotation(Vector3.up, normalVec);
 
@@ -37,65 +30,39 @@ public class MouseSlice : MonoBehaviour {
         plane.SetActive(true);
     }
 
-    Vector3 GetMousePosOnCamera()
-    {
-        var cam = Camera.main;
-        mouseRay = cam.ScreenPointToRay(Input.mousePosition);
-        return mouseRay.GetPoint(cam.nearClipPlane + distanceFromNearPlane);
-    }
-
     #endregion
 
     // Use this for initialization
     void Start () {
-        dragging = false;
-        // Initialize a somewhat big array so that it doesn't resize hopefully?
-        meshCutter = new MeshCutter(256);   
-        line = GetComponent<LineRenderer>();
-        line.positionCount = 0;
+        // Initialize a somewhat big array so that it doesn't resize
+        meshCutter = new MeshCutter(256);
 	}
 
-    // Update is called once per frame
-    void Update() {
-        if (!dragging && Input.GetMouseButtonDown(0))
-        {
-            line.positionCount = 2;
-            start = GetMousePosOnCamera();
-            line.SetPosition(0, start);
-            dragging = true;
-        } 
-
-        if (dragging)
-        {
-            line.SetPosition(1, GetMousePosOnCamera());
-        }
-
-        if (dragging && Input.GetMouseButtonUp(0))
-        {
-            // Finished dragging. We draw the line segment
-            end = GetMousePosOnCamera();
-            line.SetPosition(1, end);
-            dragging = false;
-
-            // Get depth in the direction of the camera to the mouse point
-            var depthAxis = mouseRay.direction.normalized;
-
-            var planeTangent = (end - start).normalized;
-
-            // if we didn't drag, we set tangent to be on x
-            if (planeTangent == Vector3.zero)
-                planeTangent = Vector3.right;
-
-            var normalVec = Vector3.Cross(depthAxis, planeTangent);
-
-            if (drawPlane) DrawPlane(normalVec);
-
-            SliceObjects(start, normalVec);
-
-            // When it's done, remove the line
-            line.positionCount = 0;
-        }
+    private void OnEnable()
+    {
+        lineRenderer.OnLineDrawn += OnLineDrawn;
     }
+
+    private void OnDisable()
+    {
+        lineRenderer.OnLineDrawn -= OnLineDrawn;
+    }
+
+    private void OnLineDrawn(Vector3 start, Vector3 end, Vector3 depth)
+    {
+        var planeTangent = (end - start).normalized;
+
+        // if we didn't drag, we set tangent to be on x
+        if (planeTangent == Vector3.zero)
+            planeTangent = Vector3.right;
+
+        var normalVec = Vector3.Cross(depth, planeTangent);
+
+        if (drawPlane) DrawPlane(start, end, normalVec);
+
+        SliceObjects(start, normalVec);
+    }
+    
 
     void SliceObjects(Vector3 point, Vector3 normal)
     {
