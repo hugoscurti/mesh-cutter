@@ -32,6 +32,11 @@ Here are a few examples of simple shapes being cut.
 Note
 * The material used for the sphere is _GlassRefractive_ from Unity's Standard Assets
 * The material used for Suzanne monkey is _ToonLit_ from Unity's Standard Assets
+* Those materials are used in the project's scenes, but are not included in this repo. If you want to experiment with them, import the following folders from the Standard Assets:
+  * Effects/GlassRefraction
+  * Effects/ToonShading
+  * Prototyping/Materials
+  * Prototyping/Textures
 
 ## Future work
 
@@ -48,7 +53,3 @@ Here are some of the things that could be worked on or improved:
 * Optimize the cutting algorithm. It could be interesting to treat triangles as part of a face, such that when we cut through a face, we could recompute triangles based on the face's shape so that we get an efficient number of triangles. This would also help generate better boundaries;
 
 * Using Unity's Job System to parallelize the cutting process (since the algorithm is relatively slow);
-
-
-
-
