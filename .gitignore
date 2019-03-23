@@ -36,3 +36,7 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Excluded assets from repo (should not be in source code due to licensing)
+Assets/Standard Assets/
+Assets/Standard Assets.meta
